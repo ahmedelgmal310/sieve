@@ -12,10 +12,12 @@ A container scanner reports thousands of CVEs, and teams either drown in them or
 2. **Is anyone exploiting it?** It checks the CISA Known Exploited Vulnerabilities catalogue and FIRST's EPSS probability of exploitation.
 3. **How soon must it be fixed?** It assigns a priority with a remediation deadline (SLA) measured from the day the finding was first seen.
 
-On a single `python:3.10.12-slim` image, Trivy reports **10,177** vulnerabilities. Sieve narrows them to **35** urgent ones, a 99.66% reduction, and explains each decision:
+On the first daily run across seven images, Trivy reported **21,864** findings. Sieve narrowed them to **103 urgent findings: 32 distinct vulnerabilities**, a 99.5% reduction, and explained each decision:
 
-- **9,486** are in `linux-libc-dev`. That package only holds kernel headers, and a container runs the host's kernel, so a reviewed rule marks them not affected and records why.
-- Of the rest, **4** are actively exploited (CISA KEV) and **16** more have a high probability of exploitation (EPSS).
+- **18,347** were in `linux-libc-dev`. That package only holds kernel headers, and a container runs the host's kernel, so a reviewed rule marks them not affected and records why in the OpenVEX export.
+- Of the 3,517 that do affect the images, **1,764** have a fix or an exploitation signal, and **32 vulnerabilities** are urgent: actively exploited (CISA KEV) or likely to be (EPSS).
+- The two images I own ship with **zero** vulnerabilities, so the release gate passes; the five third-party images are monitored.
+- Sieve opened one GitHub issue per urgent vulnerability (capped per run) and uploaded them to code scanning.
 
 ## How it works
 
