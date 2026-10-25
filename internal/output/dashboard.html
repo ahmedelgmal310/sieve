@@ -8,10 +8,10 @@
 <style>
   :root {
     --bg: #f8fafc; --panel: #ffffff; --ink: #0f172a; --muted: #475569; --line: #e2e8f0;
-    --p0: #b91c1c; --p1: #c2410c; --p2: #a16207; --p3: #1d4ed8; --watch: #475569; --ok: #16a34a; --accent: #4338ca;
+    --p0: #b91c1c; --p1: #c2410c; --p2: #854d0e; --p3: #1d4ed8; --watch: #475569; --ok: #16a34a; --accent: #4338ca;
   }
   @media (prefers-color-scheme: dark) {
-    :root { --bg: #0b1120; --panel: #111827; --ink: #e5e7eb; --muted: #94a3b8; --line: #1f2937; }
+    :root { --bg: #0b1120; --panel: #111827; --ink: #e5e7eb; --muted: #a3b1c6; --line: #1f2937; }
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif; }
@@ -41,9 +41,9 @@
   th { text-align: left; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); padding: 8px; white-space: nowrap; }
   td { border-bottom: 1px solid var(--line); padding: 8px; vertical-align: top; }
   td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-  .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; color: #fff; font-weight: 700; font-size: 12px; }
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; color: #fff; font-weight: 700; font-size: 12px; }
   .P0 { background: var(--p0); } .P1 { background: var(--p1); } .P2 { background: var(--p2); } .P3 { background: var(--p3); }
-  .kev { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--p0); color: var(--p0); font-size: 11px; font-weight: 700; }
+  .kev { display: inline-block; margin-left: 6px; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--p0); color: var(--p0); font-size: 11px; font-weight: 700; }
   .over { color: var(--p0); font-weight: 700; }
   .why { color: var(--muted); }
   code { font-size: 12.5px; }

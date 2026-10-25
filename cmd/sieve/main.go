@@ -233,7 +233,7 @@ func writeFile(path string, write func(io.Writer) error) error {
 }
 
 func appendFile(path string, b []byte) error {
-	f, err := os.OpenFile(filepath.Clean(path), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600) // #nosec G304 -- GITHUB_STEP_SUMMARY
+	f, err := os.OpenFile(filepath.Clean(path), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600) // #nosec G304 G703 -- GITHUB_STEP_SUMMARY, set by the runner
 	if err != nil {
 		return err
 	}

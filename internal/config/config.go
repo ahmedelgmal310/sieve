@@ -115,7 +115,7 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("config: notAffected[%d] needs a justification and an impact statement", i)
 		}
 	}
-	if !(p.SLADays["P0"] <= p.SLADays["P1"] && p.SLADays["P1"] <= p.SLADays["P2"] && p.SLADays["P2"] <= p.SLADays["P3"]) {
+	if p.SLADays["P0"] > p.SLADays["P1"] || p.SLADays["P1"] > p.SLADays["P2"] || p.SLADays["P2"] > p.SLADays["P3"] {
 		return errors.New("config: SLAs must not get shorter as priority drops")
 	}
 	return nil
