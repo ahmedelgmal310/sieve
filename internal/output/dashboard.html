@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sieve · Vulnerability Triage</title>
+<meta name="description" content="{{num .R.Funnel.Raw}} raw scanner findings triaged down to {{.R.Funnel.Urgent}} urgent ones with CISA KEV, EPSS and VEX.">
+<style>
+  :root {
+    --bg: #f8fafc; --panel: #ffffff; --ink: #0f172a; --muted: #475569; --line: #e2e8f0;
+    --p0: #b91c1c; --p1: #c2410c; --p2: #a16207; --p3: #1d4ed8; --watch: #475569; --ok: #16a34a; --accent: #4338ca;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0b1120; --panel: #111827; --ink: #e5e7eb; --muted: #94a3b8; --line: #1f2937; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 18px 48px; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: space-between; margin-bottom: 22px; }
+  h1 { margin: 0; font-size: 30px; letter-spacing: -.02em; }
+  h1 span { color: var(--muted); font-weight: 500; }
+  .meta { color: var(--muted); font-size: 13px; text-align: right; }
+  .meta a { color: var(--accent); }
+  .hero { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 22px; margin-bottom: 18px; }
+  .hero p { margin: 0 0 14px; font-size: 17px; }
+  .hero b { font-size: 20px; }
+  .funnel { display: grid; gap: 8px; }
+  .stage { display: grid; grid-template-columns: 230px 1fr 90px; gap: 12px; align-items: center; font-size: 14px; }
+  .bar { height: 22px; border-radius: 6px; background: var(--accent); min-width: 4px; }
+  .stage .n { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stage:last-child .bar { background: var(--p0); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .card .v { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .card .k { color: var(--muted); font-size: 13px; }
+  .card.p0 .v { color: var(--p0); } .card.p1 .v { color: var(--p1); } .card.kev .v { color: var(--p0); }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin-bottom: 18px; }
+  h2 { margin: 0 0 12px; font-size: 18px; }
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { text-align: left; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); padding: 8px; white-space: nowrap; }
+  td { border-bottom: 1px solid var(--line); padding: 8px; vertical-align: top; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; color: #fff; font-weight: 700; font-size: 12px; }
+  .P0 { background: var(--p0); } .P1 { background: var(--p1); } .P2 { background: var(--p2); } .P3 { background: var(--p3); }
+  .kev { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--p0); color: var(--p0); font-size: 11px; font-weight: 700; }
+  .over { color: var(--p0); font-weight: 700; }
+  .why { color: var(--muted); }
+  code { font-size: 12.5px; }
+  a { color: var(--accent); text-decoration: none; }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .tools input { flex: 1 1 220px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); font: inherit; }
+  .tools button { padding: 7px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); font: inherit; cursor: pointer; }
+  .tools button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+  .how { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; font-size: 14px; }
+  .how div { border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+  footer { color: var(--muted); font-size: 13px; text-align: center; }
+  @media (max-width: 640px) { .stage { grid-template-columns: 1fr 70px; } .stage .bar { grid-column: 1 / -1; grid-row: 2; } .meta { text-align: left; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Sieve <span>· vulnerability triage</span></h1>
+      <div class="why">Scan everything. Fix what attackers actually use.</div>
+    </div>
+    <div class="meta">
+      Run {{.R.Date}} · EPSS {{.R.Intel.EPSSDate}} · {{num .R.Intel.KEVEntries}} KEV entries · {{.R.VEXCount}} VEX statements<br>
+      <a href="results.json">results.json</a> · <a href="{{.Repo}}">source on GitHub</a>
+    </div>
+  </header>
+
+  <div class="hero">
+    <p><b>{{num .R.Funnel.Raw}}</b> raw findings across {{len .R.ByTarget}} container images became <b>{{.R.Funnel.Urgent}}</b> urgent ones: {{pct .R.Funnel.Urgent .R.Funnel.Raw}} of the noise removed.</p>
+    <div class="funnel">
+      {{range .Stages}}<div class="stage"><span>{{.Label}}</span><div class="bar" style="width: {{.Width}}%"></div><span class="n">{{num .N}}</span></div>
+      {{end}}
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="card p0"><div class="v">{{index .R.ByPriority "P0"}}</div><div class="k">P0 · fix in {{index .SLA "P0"}} days</div></div>
+    <div class="card p1"><div class="v">{{index .R.ByPriority "P1"}}</div><div class="k">P1 · fix in {{index .SLA "P1"}} days</div></div>
+    <div class="card kev"><div class="v">{{.R.KEVHits}}</div><div class="k">actively exploited (CISA KEV)</div></div>
+    <div class="card"><div class="v">{{.R.Overdue}}</div><div class="k">past their SLA</div></div>
+    <div class="card"><div class="v">{{index .R.ByPriority "suppressed"}}</div><div class="k">closed as not affected (VEX)</div></div>
+    <div class="card"><div class="v">{{.R.New}} / {{.R.Resolved}}</div><div class="k">new / resolved since last run</div></div>
+  </div>
+
+  <section>
+    <h2>What to fix first</h2>
+    <div class="tools">
+      <input id="q" type="search" placeholder="Filter by CVE, package or image" aria-label="Filter">
+      <button data-p="all" aria-pressed="true">All</button>
+      <button data-p="P0" aria-pressed="false">P0</button>
+      <button data-p="P1" aria-pressed="false">P1</button>
+      <button data-p="P2" aria-pressed="false">P2</button>
+    </div>
+    <div class="scroll">
+    <table id="work">
+      <thead><tr><th>Priority</th><th>Vulnerability</th><th>Why this priority</th><th class="num">EPSS</th><th class="num">CVSS</th><th>Images</th><th>Fix</th><th>Due</th></tr></thead>
+      <tbody>
+      {{range .Groups}}<tr data-p="{{.Priority}}">
+        <td><span class="pill {{.Priority}}">{{.Priority}}</span></td>
+        <td><a href="{{.URL}}">{{.CVE}}</a>{{if .KEV}}<span class="kev">KEV</span>{{end}}<br><span class="why">{{trunc .Title 80}}</span></td>
+        <td class="why">{{.Reason}}</td>
+        <td class="num">{{printf "%.1f" (mul .EPSS.Score 100)}}%</td>
+        <td class="num">{{if .CVSS}}{{printf "%.1f" .CVSS}}{{else}}–{{end}}</td>
+        <td>{{range .Targets}}<code>{{.}}</code> {{end}}</td>
+        <td>{{if .Fixes}}{{range firstN .Fixes 2}}<code>{{.}}</code><br>{{end}}{{if gt (len .Fixes) 2}}<span class="why">+{{sub (len .Fixes) 2}} more</span>{{end}}{{else}}<span class="why">no fix yet</span>{{end}}</td>
+        <td{{if .Overdue}} class="over"{{end}}>{{.Due}}</td>
+      </tr>
+      {{end}}
+      </tbody>
+    </table>
+    </div>
+    {{if .More}}<p class="why">Showing the {{len .Groups}} most urgent vulnerabilities; {{.More}} lower-priority ones are in results.json.</p>{{end}}
+  </section>
+
+  <section>
+    <h2>Images</h2>
+    <div class="scroll">
+    <table>
+      <thead><tr><th>Image</th><th>Exposure</th><th>Gate</th><th class="num">Raw</th><th class="num">P0</th><th class="num">P1</th><th class="num">P2</th><th class="num">P3</th><th class="num">Watch</th></tr></thead>
+      <tbody>
+      {{range .R.ByTarget}}<tr>
+        <td><code>{{.Image}}</code></td><td>{{.Exposure}}</td><td>{{if .Gated}}blocks release{{else}}monitored{{end}}</td>
+        <td class="num">{{num .Raw}}</td><td class="num">{{index .ByPriority "P0"}}</td><td class="num">{{index .ByPriority "P1"}}</td>
+        <td class="num">{{index .ByPriority "P2"}}</td><td class="num">{{index .ByPriority "P3"}}</td><td class="num">{{index .ByPriority "watch"}}</td>
+      </tr>
+      {{end}}
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>How priorities are assigned</h2>
+    <div class="how">
+      <div><span class="pill P0">P0</span> Listed in CISA KEV (exploited in the wild), or EPSS ≥ {{pctf .Policy.EPSSUrgent}}. Fix within {{index .SLA "P0"}} days.</div>
+      <div><span class="pill P1">P1</span> High or critical with EPSS ≥ {{pctf .Policy.EPSSHigh}}, or critical on an internet-facing image. {{index .SLA "P1"}} days.</div>
+      <div><span class="pill P2">P2</span> High or critical with a fix available and no exploitation signal. {{index .SLA "P2"}} days.</div>
+      <div><span class="pill P3">P3</span> Anything else that has a fix. {{index .SLA "P3"}} days. Findings with no fix and no exploitation are watched, not ticketed.</div>
+    </div>
+  </section>
+
+  <footer>Generated by <a href="{{.Repo}}">Sieve</a> {{.Version}} · data: Trivy, CISA KEV, FIRST EPSS, OpenVEX</footer>
+</div>
+<script>
+(() => {
+  const rows = [...document.querySelectorAll('#work tbody tr')];
+  const q = document.getElementById('q');
+  const buttons = [...document.querySelectorAll('.tools button')];
+  let prio = 'all';
+  const apply = () => {
+    const term = q.value.trim().toLowerCase();
+    rows.forEach(r => {
+      const okP = prio === 'all' || r.dataset.p === prio;
+      const okQ = !term || r.textContent.toLowerCase().includes(term);
+      r.hidden = !(okP && okQ);
+    });
+  };
+  q.addEventListener('input', apply);
+  buttons.forEach(b => b.addEventListener('click', () => {
+    prio = b.dataset.p;
+    buttons.forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    apply();
+  }));
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://example.test/vex/1",
+  "author": "Security Team",
+  "timestamp": "2026-10-01T00:00:00Z",
+  "statements": [
+    {"vulnerability": {"name": "CVE-2024-0007"}, "products": [{"@id": "web"}], "status": "not_affected", "justification": "vulnerable_code_not_in_execute_path"},
+    {"vulnerability": {"name": "CVE-2024-0005"}, "products": [{"@id": "pkg:deb/debian/tar"}], "status": "under_investigation", "impact_statement": "checking"}
+  ]
+}

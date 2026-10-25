@@ -1,0 +1,7 @@
+/out/
+/reports/
+/feeds/
+*.exe
+coverage.out
+.omc/
+.impeccable/

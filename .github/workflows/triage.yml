@@ -1,0 +1,107 @@
+name: Daily triage
+
+# Scans every image in sieve.json, triages the findings with CISA KEV, EPSS
+# and VEX, then publishes the dashboard, SARIF and issues. Runs daily because
+# the risk of an unchanged image changes every day: new CVEs are published,
+# EPSS scores move, and CISA adds exploited vulnerabilities to KEV.
+on:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["sieve.json", "vex/**", "cmd/**", "internal/**", ".github/workflows/triage.yml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: triage
+  cancel-in-progress: false
+
+env:
+  GO_VERSION: "1.27.3"
+  TRIVY_IMAGE: aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c
+  DASHBOARD_URL: https://ahmedelgmal310.github.io/sieve/
+
+jobs:
+  triage:
+    name: Scan, triage and publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      issues: write
+      security-events: write
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Cache the Trivy vulnerability database
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/trivy-cache
+          key: trivy-db-${{ github.run_id }}
+          restore-keys: trivy-db-
+
+      - name: Scan every image with Trivy
+        run: |
+          mkdir -p reports "$RUNNER_TEMP/trivy-cache"
+          jq -r '.targets[] | "\(.name) \(.image)"' sieve.json | while read -r name image; do
+            echo "::group::$name ($image)"
+            docker run --rm -v "$RUNNER_TEMP/trivy-cache:/root/.cache/trivy" -v "$PWD/reports:/reports" \
+              "$TRIVY_IMAGE" image --quiet --timeout 15m --image-src remote --scanners vuln \
+              --format json --output "/reports/$name.json" "$image"
+            echo "$name: $(jq '[.Results[]?.Vulnerabilities[]?] | length' "reports/$name.json") findings"
+            echo "::endgroup::"
+          done
+
+      - name: Download exploit intelligence (CISA KEV, EPSS)
+        run: |
+          mkdir -p feeds
+          curl -fsSL --retry 3 -o feeds/kev.json https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+          curl -fsSL --retry 3 -o feeds/epss.csv.gz https://epss.empiricalsecurity.com/epss_scores-current.csv.gz
+          # Previous run's state keeps first-seen dates, so SLAs survive across runs.
+          curl -fsSL --retry 2 -o feeds/state.json "${DASHBOARD_URL}state.json" || echo '{}' > feeds/state.json
+
+      - name: Triage
+        id: triage
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          go run -ldflags "-X main.version=$(git rev-parse --short HEAD)" ./cmd/sieve triage \
+            -config sieve.json -reports reports -vex vex \
+            -kev feeds/kev.json -epss feeds/epss.csv.gz -state feeds/state.json \
+            -out out -dashboard-url "$DASHBOARD_URL" -repo-url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
+            -issues -issues-max 15 -gate
+          code=$?
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          [ "$code" = 0 ] || [ "$code" = 3 ]
+
+      - name: Upload SARIF to code scanning
+        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          sarif_file: out/sieve.sarif
+          category: sieve
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: out
+      - name: Publish the dashboard
+        id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+      - name: Release gate (owned images)
+        if: steps.triage.outputs.code == '3'
+        run: |
+          echo "::error::A gated image has a P0 or an overdue finding. See the job summary and the open issues."
+          exit 1

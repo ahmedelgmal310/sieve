@@ -1,0 +1,15 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://github.com/ahmedelgmal310/sieve/vex/nginx-2026-10",
+  "author": "Ahmed Elgammal <ahmedelgmal763@gmail.com>",
+  "timestamp": "2026-10-26T00:00:00Z",
+  "version": 1,
+  "statements": [
+    {
+      "vulnerability": { "name": "CVE-2023-44487" },
+      "products": [ { "@id": "nginx" } ],
+      "status": "under_investigation",
+      "impact_statement": "HTTP/2 Rapid Reset: http2 is enabled on the edge proxy; confirming that keepalive_requests and http2_max_concurrent_streams limits are deployed before closing."
+    }
+  ]
+}

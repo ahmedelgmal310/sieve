@@ -1,0 +1,10 @@
+{
+  "ArtifactName": "ghcr.io/example/api:main",
+  "Results": [
+    {"Target": "app", "Class": "lang-pkgs", "Vulnerabilities": [
+      {"VulnerabilityID": "CVE-2023-4911", "PkgName": "libc6", "InstalledVersion": "2.36-9", "FixedVersion": "2.36-9+deb12u3", "Severity": "HIGH", "PkgIdentifier": {"PURL": "pkg:deb/debian/libc6@2.36-9"}},
+      {"VulnerabilityID": "CVE-2024-0008", "PkgName": "stdlib", "InstalledVersion": "1.22.0", "FixedVersion": "1.22.5", "Severity": "CRITICAL", "PkgIdentifier": {"PURL": "pkg:golang/stdlib@1.22.0"}, "CVSS": {"ghsa": {"V3Score": 9.1}}}
+    ]},
+    {"Target": "empty", "Class": "os-pkgs", "Vulnerabilities": null}
+  ]
+}

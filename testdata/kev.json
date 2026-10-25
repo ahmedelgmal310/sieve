@@ -1,0 +1,4 @@
+{"title": "CISA KEV", "vulnerabilities": [
+  {"cveID": "CVE-2023-4911", "vulnerabilityName": "GNU C Library Buffer Overflow", "dateAdded": "2023-11-21", "dueDate": "2023-12-12", "knownRansomwareCampaignUse": "Unknown"},
+  {"cveID": "CVE-2024-9999", "vulnerabilityName": "Unrelated", "dateAdded": "2024-01-01", "dueDate": "2024-01-22", "knownRansomwareCampaignUse": "Known"}
+]}
